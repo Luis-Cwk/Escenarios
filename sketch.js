@@ -1,92 +1,122 @@
-let r, g, b, x, y;
-let a = 4;
-let detailY;
-let capture;
-let d;
-let c;
+// "Caos armónico" es coreografía generativa que crea cuerpos representados por líneas vibrantes y coloridas, moviéndose en un espacio abstracto al compás de ritmos sincopados y frenéticos generados por algoritmos, ML e intervención humana. Permitete contemplar el cardumen! Estos cuerpos danzan de manera impredecible, influenciados por un factor de ruido aleatorio que les confiere un movimiento caótico y armónico al mismo tiempo. La obra es una exploración de la belleza encontrada en la interacción de lo aleatorio y lo armónico, creando una experiencia sensorialmente estimulante y evocativa. Los colores, vibrantes y variados, se fusionan y se separan en un constante juego de mezcla y separación, creando un espectáculo visualmente cautivador. "Caos armónico" es una danza que celebra la imprevisibilidad y la armonía en la complejidad del universo. // 
+
+var colores = [
+  "red",
+  "orange",
+  "blue",
+  "indigo",
+  "purple",
+  "pink",
+  "yellow", 
+  "green",
+  "cyan",
+  "brown",
+];
+var x = [];
+var y = [];
+var sz = [];
+var seed = fxrand;
+var noiseScale = 0.2;
+var velocidad = []; 
+let circleX = 0;
+let circleY = 0;
+let xSpeed = 0;
+let ySpeed = 0;
+
+function genR(min, mx) { let result = 0; if (!mx) { result = fxrand() * (min - 0) + 0; } else { result = fxrand() * (mx - min) + min; } return result; }
 
 function setup() {
-  frameRate(15);
-  createCanvas(windowWidth, windowHeight, WEBGL);
-  d = width / 2;
-  c = height / 2;
 
-  detailY = createSlider(3, 24, 3);
-  detailY.position(10, height + 5);
-  detailY.style('width', '80px');
+  createCanvas(windowWidth - 1, windowHeight - 1);
+  frameRate(60);
 
-  capture = createCapture(VIDEO);
-  capture.size(320, 240); 
+  for (var i = 0; i < 9; i++) {
+    x = append(x, genR(-windowWidth / 2, windowWidth / 2));
+    y = append(y, genR(-windowHeight / 2, windowHeight / 2));
+    sz = append(sz, floor(genR(100)));
+    velocidad = append(velocidad, genR(3));
+  }
+
+  extraCanvas = createGraphics(windowWidth, windowHeight);
 }
+
 
 function draw() {
 
-  if (a < width) {
-    let v = p5.Vector.random3D();
-    // background(100, 250, 190);
+  background(255);
+  image(extraCanvas, 0, 0, windowWidth, windowHeight);
+  
+  for (var i = 0; i < x.length; i++) {
 
-    // rotateY(millis() / 1000);
-
-    // rotateX(millis() / 1000);
-    // translate(p5.Vector.fromAngle(millis() / 1000, 40));
-    push();
-    noStroke();
-    // stroke(random(230), random(230), random(230));
-    texture(capture);
-    // rotateX(millis() / 1000);
-    // translate(width / 4, height / 4, height / 8);
-    // rotateY(millis() / 1000);
-    capture.loadPixels();
-    const stepSize = round(constrain(mouseX / 8, 6, 32));
-    for (let y = 0; y < height; y += stepSize) {
-      for (let x = 0; x < width; x += stepSize) {
-        const i = y * width + x;
-        const darkness = (255 - capture.pixels[i * 4]) / 255;
-        const radius = stepSize * darkness;
-        sphere(x, y, radius);
-
-        // sphere(d, c, detailY.value());
-
-        d = d - 0.5;
-        if (d < 0) {
-          d = height;
-        }
-
-        c = c - 0.5;
-        if (c < 0) {
-          c = height;
-        }
-      }
-    }
+    extraCanvas.push();
+    var steps = sz[i];
     
-    // if (capture.loadedmetadata) {
-    //   let c = capture.get(0, 0, 512, 512);
-    //   image(c, 0, 0);
-    // }
+    for (var j = 1; j < y.length; j+=steps) {
+      
+      let noiseVal = noise(x[i] + noiseScale, y[j] * steps);
+      
+      x[noiseVal - 1] += genR(-sz[i], sz[i]);
+      y[noiseVal - 1] += genR(-sz[i], sz[i]);
 
-    pop();
+      x[j - 1] = constrain(x[j], 0, windowWidth);
+      y[j - 1] = constrain(y[j], 0, windowHeight);
+      
+      let angle = map(noiseVal, 0, 1, 0, TWO_PI);
+      let ang = genR(noiseVal);
+      var t = noiseVal - angle;
+    
+      var x1 = x[i] + angle;
+      var y1 = sz[i] - angle;
+      var x2 = y[i] * angle;
+      var y2 = velocidad[i] + angle;
 
+      extraCanvas.stroke(colores[i]);        
+      extraCanvas.fill(genR(colores[i]));
+              
+      var tx = width / 2 + 50 * sin(x[i] + frameCount * 0.02);
+      var ty = height / 2 + 51 * cos(y[i] + frameCount * 0.03); 
+        
+      extraCanvas.translate(tx, ty);
+        
+      extraCanvas.rotate(cos(frameCount * 0.008)/tx*ty);
+              
+      circleX += xSpeed;
+        if (circleX < x[i] || circleX > angle) {
+          xSpeed *= -1;
+        }
 
-  } else {
-    console.log('negative');
+      circleY += ySpeed;
+        if (circleY < y[i] || circleY > angle) {
+          ySpeed *= -1;
+        }
 
+      let val = circleX * noiseVal / tx;
+
+      extraCanvas.line(x1 || val, y1, x[j] || x1, y[j] || val, x2, val, x[j-1], y1);
+    }   
+    
+    extraCanvas.pop();
   }
+  
+  if (frameCount == 3000) {
+    noLoop();
+  }  
 
 }
 
-// function mousePressed() {
-//   background(random(255));
-  
-//   if (a > 3) {
-//     console.log('positive');
-//     fill(220, 60, 70, mouseY);
-//     // stroke(random(200), random(200));
-//     rotateY(millis() / 150);
-//     sphere(height, 16, detailY.value());
-//   } else {
-//     console.log('negative');
-//   }
-//}
+if (isFxpreview == true) {
+  fxpreview();
+}
 
+// DATA // 
+function getFeatureString(value) {
+  if (value
+    < 0.5) return "low"
+  if (value < 0.9) return "medium"
+  else return "high"
+}
 
-
+window.$fxhashFeatures = {
+  // feature can only be "low", "medium" or "high"
+  "☁ Dance ☁": getFeatureString(fxrand())
+}
