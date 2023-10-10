@@ -26,14 +26,14 @@ let ySpeed = 0;
 function genR(min, mx) { let result = 0; if (!mx) { result = fxrand() * (min - 0) + 0; } else { result = fxrand() * (mx - min) + min; } return result; }
 
 function setup() {
-
+  randomSeed(int(fxrand() * 987654321))
   createCanvas(windowWidth - 1, windowHeight - 1);
   frameRate(60);
 
   for (var i = 0; i < 9; i++) {
     x = append(x, genR(-windowWidth / 2, windowWidth / 2));
     y = append(y, genR(-windowHeight / 2, windowHeight / 2));
-    sz = append(sz, floor(genR(100)));
+    sz = append(sz, genR(100));
     velocidad = append(velocidad, genR(3));
   }
 
@@ -47,39 +47,33 @@ function draw() {
   image(extraCanvas, 0, 0, windowWidth, windowHeight);
   
   for (var i = 0; i < x.length; i++) {
-
     extraCanvas.push();
     var steps = sz[i];
     
     for (var j = 1; j < y.length; j+=steps) {
-      
       let noiseVal = noise(x[i] + noiseScale, y[j] * steps);
       
       x[noiseVal - 1] += genR(-sz[i], sz[i]);
       y[noiseVal - 1] += genR(-sz[i], sz[i]);
-
       x[j - 1] = constrain(x[j], 0, windowWidth);
       y[j - 1] = constrain(y[j], 0, windowHeight);
-      
+    
       let angle = map(noiseVal, 0, 1, 0, TWO_PI);
       let ang = genR(noiseVal);
       var t = noiseVal - angle;
-    
       var x1 = x[i] + angle;
       var y1 = sz[i] - angle;
       var x2 = y[i] * angle;
       var y2 = velocidad[i] + angle;
-
       extraCanvas.stroke(colores[i]);        
-      extraCanvas.fill(genR(colores[i]));
+      extraCanvas.fill(genR(colores[i]));       
+      var tx = width / 2 + sz[i] * sin(x[i] * 0.02);
+      var ty = height / 2 + sz[i] * cos(y[i] * 0.03);   
+      extraCanvas.translate(tx, ty);  
+      extraCanvas.rotate(cos(sz[i] * 0.005));
               
-      var tx = width / 2 + 50 * sin(x[i] + frameCount * 0.02);
-      var ty = height / 2 + 51 * cos(y[i] + frameCount * 0.03); 
-        
-      extraCanvas.translate(tx, ty);
-        
-      extraCanvas.rotate(cos(frameCount * 0.008)/tx*ty);
-              
+      sz[i] = sz[i] + 1;
+
       circleX += xSpeed;
         if (circleX < x[i] || circleX > angle) {
           xSpeed *= -1;
@@ -91,14 +85,13 @@ function draw() {
         }
 
       let val = circleX * noiseVal / tx;
-
-      extraCanvas.line(x1 || val, y1, x[j] || x1, y[j] || val, x2, val, x[j-1], y1);
-    }   
+      extraCanvas.line(x1, y1, x[j], val, x2, val, sz[i], y2);
+    }
     
     extraCanvas.pop();
   }
   
-  if (frameCount == 3000) {
+  if (frameCount == 1000) {
     noLoop();
   }  
 
